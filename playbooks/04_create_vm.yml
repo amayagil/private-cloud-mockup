@@ -1,29 +1,20 @@
 # playbooks/04_create_vm.yml
 
----
-- name: MOCK - Final VM Creation
-  hosts: localhost
-  connection: local
-  gather_facts: no
-  vars_files:
-    - ../vars/vm_config.yml
+- name: Pre-Check - Ensure vm_profile is defined
+  ansible.builtin.assert:
+    that:
+      - vm_profile is defined
+    fail_msg: "ERROR: vm_profile not defined. Run 00_setup_vars.yml first."
 
-  tasks:
-    - name: Pre-Check Ensure vm_profile is defined
-      ansible.builtin.assert:
-        that:
-          - vm_profile is defined
-        fail_msg: "ERROR: vm_profile not defined. Run 00_setup_vars.yml first."
+- name: Step 4.1 - Initiate VM Cloning and Configuration
+  ansible.builtin.debug:
+    msg: "Calling Cloud API to create VM '{{ vm_config.vm_name }}' using template '{{ vm_config.os_template }}' with assigned resources: CPU={{ vm_profile.cpu }}, RAM={{ vm_profile.ram_gb }}GB, Disk={{ vm_profile.storage_gb }}GB."
 
-    - name: Step 4.1 Initiate VM Cloning and Configuration
-      ansible.builtin.debug:
-        msg: "Calling Cloud API to create VM '{{ vm_name }}' using template '{{ os_template }}' with assigned resources. This is the main provisioning command."
+- name: Step 4.2 - Simulate Provisioning Wait
+  ansible.builtin.pause:
+    seconds: 5
+    prompt: "VM provisioning in progress... Press [Enter] to simulate completion."
 
-    - name: Step 4.2 Simulate VM Creation and First Boot
-      ansible.builtin.pause:
-        seconds: 15
-        prompt: "VM creation is in progress... (Simulating 15s boot time). Press [Enter] when done."
-
-    - name: Step 4.3 Final VM Status Check
-      ansible.builtin.debug:
-        msg: "VM '{{ vm_name }}' is ACTIVE and ready! Access via {{ vm_dns_record }} ({{ vm_ip_address }}). The provisioning pipeline is complete."
+- name: Step 4.3 - Confirm VM Creation
+  ansible.builtin.debug:
+    msg: "VM '{{ vm_config.vm_name }}' successfully created and configured under host group '{{ vm_config.target_host_group }}'."

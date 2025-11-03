@@ -1,15 +1,15 @@
-# vars/capacity_profiles.yml
-
 capacity_profiles:
   small:
-    cpu_cores: 2
-    memory_gb: 4
-    disk_size_gb: 100
+    cpu: 2
+    ram_gb: 4
+    storage_gb: 50
+
   medium:
-    cpu_cores: 4
-    memory_gb: 8
-    disk_size_gb: 200
+    cpu: 4
+    ram_gb: 8
+    storage_gb: 100
+
   large:
-    cpu_cores: 8
-    memory_gb: 16
-    disk_size_gb: 400
+    cpu: 8
+    ram_gb: 16
+    storage_gb: 200

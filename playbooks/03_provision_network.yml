@@ -1,24 +1,18 @@
 # playbooks/03_provision_network.yml
 
----
-- name: PROVISION - Network Setup (IP and Security)
-  hosts: localhost
-  connection: local
-  gather_facts: no
-  vars_files:
-    - ../vars/vm_config.yml
+- name: Step 3.1 - Simulate IP Address Allocation
+  ansible.builtin.debug:
+    msg: "DHCP/IPAM service allocating static IP: {{ vm_config.vm_ip_address }} for VM '{{ vm_config.vm_name }}'."
 
-  tasks:
-    - name: Step 3.1 - Simulate IP Address Allocation
-      ansible.builtin.debug:
-        msg: "DHCP/IPAM service allocating static IP: {{ vm_ip_address }} for VM '{{ vm_name }}'."
+- name: Step 3.2 - Create/Verify and Attach Security Group to virtual interface
+  ansible.builtin.debug:
+    msg: "Attaching security groups {{ vm_config.vm_security_groups }} to virtual NIC for VM '{{ vm_config.vm_name }}'."
 
-    - name: Step 3.2 - Create/Verify and Attach Security Group to virtual interface
-      ansible.builtin.debug:
-        msg: "Verifying and attaching Security Groups: {{ vm_security_groups | join(', ') }} to the VM's virtual NIC."
-      ansible.builtin.pause:
-        seconds: 3
+- name: Step 3.3 - Simulate Security Group Attachment Confirmation
+  ansible.builtin.pause:
+    seconds: 3
+    prompt: "Security groups successfully attached. Press [Enter] to continue."
 
-    - name: Step 3.3 - Create DNS A-Record
-      ansible.builtin.debug:
-        msg: "Creating DNS record '{{ vm_dns_record }}' pointing to {{ vm_ip_address }}."
+- name: Step 3.4 - Simulate DNS Record Creation
+  ansible.builtin.debug:
+    msg: "Creating DNS record '{{ vm_config.vm_dns_record }}' for IP {{ vm_config.vm_ip_address }}."
