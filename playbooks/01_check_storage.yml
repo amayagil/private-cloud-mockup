@@ -1,0 +1,25 @@
+# playbooks/01_check_storage.yml
+
+---
+- name: CHECK - Storage Capacity Verification
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  vars_files:
+    - ../vars/vm_config.yml
+
+  tasks:
+    - name: Pre-Check Ensure vm_profile is defined (requires 00_setup_vars.yml to run first)
+      ansible.builtin.assert:
+        that:
+          - vm_profile is defined
+        fail_msg: "ERROR: vm_profile not defined. Run 00_setup_vars.yml first."
+
+    - name: Simulate querying storage cluster for required space
+      ansible.builtin.debug:
+        msg: "Querying storage cluster to ensure {{ vm_profile.disk_size_gb }} GB is available for VM '{{ vm_name }}'."
+
+    - name: Simulate Storage API Call
+      ansible.builtin.pause:
+        seconds: 3
+        prompt: "Storage check API response received... Space is RESERVED. Press [Enter] to continue."

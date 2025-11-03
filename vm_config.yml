@@ -1,0 +1,21 @@
+# vars/vm_config.yml
+
+# --- General VM Configuration ---
+vm_name: "win-prod-app-server"
+os_template: "windows-server-2022-gold-image"
+target_host_group: "compute_cluster_b" # The host infrastructure to check
+
+# --- Network Configuration ---
+vm_ip_address: "172.16.10.201"
+vm_subnet: "255.255.255.0"
+vm_gateway: "172.16.10.1"
+vm_security_groups:
+  - "sg-windows-rdp-admin"
+  - "sg-app-web-in"
+
+# --- DNS Configuration ---
+vm_dns_record: "win-prod-app-server.private-cloud.corp"
+
+# --- Capacity Profile Selection ---
+# Select one of the profiles defined in capacity_profiles.yml: small, medium, or large
+selected_capacity_profile: "medium"
