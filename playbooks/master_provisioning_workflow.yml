@@ -1,0 +1,47 @@
+# playbooks/master_provisioning_workflow.yml
+
+---
+- name: MASTER WORKFLOW Windows VM Private Cloud Provisioning
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  # We use a single 'pre_tasks' section to load and set the VM profile globally.
+  # This ensures all subsequent imported playbooks have access to 'vm_profile'.
+  pre_tasks:
+    - name: 1. Setup Load Configuration and Capacity Profile
+      ansible.builtin.include_vars:
+        file: ../vars/vm_config.yml
+        name: vm_config
+
+    - name: 2. Setup Load Capacity Definitions
+      ansible.builtin.include_vars:
+        file: ../vars/capacity_profiles.yml
+        name: capacity_defs
+
+    - name: 3. Setup Set Dynamic VM Profile Fact
+      ansible.builtin.set_fact:
+        vm_profile: "{{ capacity_defs.capacity_profiles[vm_config.selected_capacity_profile] }}"
+
+    - name: Confirm Profile Loaded
+      ansible.builtin.debug:
+        msg: "Provisioning pipeline initiated for VM '{{ vm_config.vm_name }}' using {{ vm_config.selected_capacity_profile | upper }} profile."
+
+# --- Pipeline Execution Stages ---
+
+- name: STAGE 1: Storage Capacity Check
+  # This import executes the external playbook file (01_check_storage.yml)
+  ansible.builtin.import_playbook:
+    file: 01_check_storage.yml
+
+- name: STAGE 2: Compute (CPU/RAM) Capacity Check
+  ansible.builtin.import_playbook:
+    file: 02_check_compute.yml
+
+- name: STAGE 3: Network Provisioning (IP, SG, DNS)
+  ansible.builtin.import_playbook:
+    file: 03_provision_network.yml
+
+- name: STAGE 4: Final VM Creation Mock
+  ansible.builtin.import_playbook:
+    file: 04_create_vm.yml
