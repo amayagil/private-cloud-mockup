@@ -16,24 +16,43 @@
         name: capacity_data
     
   tasks:
-    - name: Pre-Check - Ensure vm_profile is defined
+    - name: Show received workflow variables
+      ansible.builtin.debug:
+        msg:
+          - "Received VM name: {{ vm_name | default('undefined') }}"
+          - "Storage check passed: {{ storage_check_passed | default(false) }}"
+          - "Capacity profile: {{ vm_profile | default({}) }}"
+          - "CPU cores: {{ vm_profile.cpu | default('N/A') }}"
+          - "RAM: {{ vm_profile.ram_gb | default('N/A') }} GB"
+
+    - name: Validate that previous step succeeded
       ansible.builtin.assert:
         that:
-          - vm_profile is defined
-        fail_msg: "ERROR: vm_profile not defined. Run 00_setup_vars.yml first."
+          - storage_check_passed | default(false)
+        fail_msg: "Previous workflow stage (storage) did not complete successfully."
 
-    - name: Simulate querying compute cluster capacity
+    - name: Validate compute data presence
+      ansible.builtin.assert:
+        that:
+          - vm_profile.cpu is defined
+          - vm_profile.ram_gb is defined
+        fail_msg: "vm_profile is incomplete or missing compute data."
+
+    - name: Simulate compute resource query
       ansible.builtin.debug:
-        msg: "Querying compute cluster '{{ vm_config.target_host_group }}' to ensure {{ vm_profile.cpu }} CPU cores and {{ vm_profile.ram_gb }} GB RAM are available."
+        msg: >
+          Checking compute cluster for {{ vm_profile.cpu }} CPU cores
+          and {{ vm_profile.ram_gb }} GB RAM availability for VM '{{ vm_name }}'.
 
-    - name: Simulate Compute API Call and Resource Reservation
+    - name: Simulate compute reservation
       ansible.builtin.pause:
-        seconds: 4
-        prompt: "Compute check API response received... Resources are RESERVED on host. Press [Enter] to continue."
+        seconds: 3
+        prompt: "Compute resources allocated successfully. Press [Enter] to continue."
 
-    # tarea para pasar variables al siguiente paso del WF
-    - name: Save vm_profile for next workflow step
+    - name: Save results for next workflow step
       ansible.builtin.set_stats:
         data:
+          compute_check_passed: true
           vm_profile: "{{ vm_profile }}"
-          vm_name: "{{ vm_config.vm_name }}"
+          vm_name: "{{ vm_name }}"
+          storage_check_passed: "{{ storage_check_passed }}"
