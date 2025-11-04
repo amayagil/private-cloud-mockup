@@ -17,11 +17,21 @@
         name: capacity_data
 
   tasks:
-    - name: Set vm_profile based on selection
+   - name: Define defaults if files not found
       ansible.builtin.set_fact:
         capacity_data: "{{ capacity_data | default({'capacity_profiles': {'small': {'cpu': 2, 'ram_gb': 4, 'storage_gb': 50}, 'medium': {'cpu': 4, 'ram_gb': 8, 'storage_gb': 100}, 'large': {'cpu': 8, 'ram_gb': 16, 'storage_gb': 200}}}) }}"
-        vm_config: "{{ vm_config | default({'capacity_profile': 'medium', 'vm_name': 'default-vm'}) }}"
+        selected_profile: "{{ vm_config.selected_capacity_profile | default('medium') }}"
+        vm_name: "{{ vm_config.vm_name | default('default-vm') }}"
+
+    - name: Set vm_profile based on selected profile
+      ansible.builtin.set_fact:
+        vm_profile: "{{ capacity_data.capacity_profiles[selected_profile] | default({}) }}"
 
     - name: Confirm Profile Loaded
       ansible.builtin.debug:
-        msg: "Capacity Profile '{{ capacity_profile | upper }}' loaded: CPU={{ vm_profile.cpu_cores }}, RAM={{ vm_profile.memory_gb }} GB, Disk={{ vm_profile.disk_size_gb }} GB."
+        msg: >
+          Capacity Profile '{{ selected_profile | upper }}' loaded:
+          CPU={{ vm_profile.cpu | default('N/A') }},
+          RAM={{ vm_profile.ram_gb | default('N/A') }} GB,
+          Disk={{ vm_profile.storage_gb | default('N/A') }} GB,
+          VM={{ vm_name }}.
