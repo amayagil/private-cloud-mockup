@@ -20,8 +20,8 @@
     - name: Set vm_profile based on selection
       ansible.builtin.set_fact:
         capacity_data: "{{ capacity_data | default({'capacity_profiles': {'small': {'cpu': 2, 'ram_gb': 4, 'storage_gb': 50}, 'medium': {'cpu': 4, 'ram_gb': 8, 'storage_gb': 100}, 'large': {'cpu': 8, 'ram_gb': 16, 'storage_gb': 200}}}) }}"
-        vm_config: "{{ vm_config | default({'selected_capacity_profile': 'medium', 'vm_name': 'default-vm'}) }}"
+        vm_config: "{{ vm_config | default({'capacity_profile': 'medium', 'vm_name': 'default-vm'}) }}"
 
     - name: Confirm Profile Loaded
       ansible.builtin.debug:
-        msg: "Capacity Profile '{{ selected_capacity_profile | upper }}' loaded: CPU={{ vm_profile.cpu_cores }}, RAM={{ vm_profile.memory_gb }} GB, Disk={{ vm_profile.disk_size_gb }} GB."
+        msg: "Capacity Profile '{{ capacity_profile | upper }}' loaded: CPU={{ vm_profile.cpu_cores }}, RAM={{ vm_profile.memory_gb }} GB, Disk={{ vm_profile.disk_size_gb }} GB."
