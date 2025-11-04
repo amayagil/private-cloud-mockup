@@ -35,3 +35,9 @@
           RAM={{ vm_profile.ram_gb | default('N/A') }} GB,
           Disk={{ vm_profile.storage_gb | default('N/A') }} GB,
           VM={{ vm_name }}.
+    # tarea para pasar variables al siguiente paso del WF
+    - name: Save vm_profile for next workflow step
+      ansible.builtin.set_stats:
+        data:
+          vm_profile: "{{ vm_profile }}"
+          vm_name: "{{ vm_config.vm_name }}"

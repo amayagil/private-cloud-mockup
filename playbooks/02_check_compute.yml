@@ -30,3 +30,10 @@
       ansible.builtin.pause:
         seconds: 4
         prompt: "Compute check API response received... Resources are RESERVED on host. Press [Enter] to continue."
+
+    # tarea para pasar variables al siguiente paso del WF
+    - name: Save vm_profile for next workflow step
+      ansible.builtin.set_stats:
+        data:
+          vm_profile: "{{ vm_profile }}"
+          vm_name: "{{ vm_config.vm_name }}"
