@@ -4,9 +4,16 @@
   connection: local
   gather_facts: no
 
-  vars_files:
-    - /vars/vm_config.yml
-    - /vars/capacity_profiles.yml
+  pre_tasks:
+    - name: Load VM Config
+      ansible.builtin.include_vars:
+        file: "{{ playbook_dir }}/../vars/vm_config.yml"
+        name: vm_config
+
+    - name: Load Capacity Profiles
+      ansible.builtin.include_vars:
+        file: "{{ playbook_dir }}/../vars/capacity_profiles.yml"
+        name: capacity_data
     
   tasks:
     - name: Step 3.1 - Simulate IP Address Allocation
