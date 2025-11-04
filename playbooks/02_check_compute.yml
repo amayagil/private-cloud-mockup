@@ -4,6 +4,10 @@
   connection: local
   gather_facts: no
 
+  vars_files:
+    - "{{ playbook_dir }}/../vars/vm_config.yml"
+    - "{{ playbook_dir }}/../vars/capacity_profiles.yml"
+    
   tasks:
     - name: Pre-Check - Ensure vm_profile is defined
       ansible.builtin.assert:

@@ -5,6 +5,10 @@
   connection: local
   gather_facts: no
 
+  vars_files:
+    - "{{ playbook_dir }}/../vars/vm_config.yml"
+    - "{{ playbook_dir }}/../vars/capacity_profiles.yml"
+
   tasks:
     - name: Set vm_profile based on selection
       ansible.builtin.set_fact:
