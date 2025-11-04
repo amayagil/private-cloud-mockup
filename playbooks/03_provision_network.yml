@@ -5,8 +5,8 @@
   gather_facts: no
 
   vars_files:
-    - "{{ playbook_dir }}/../vars/vm_config.yml"
-    - "{{ playbook_dir }}/../vars/capacity_profiles.yml"
+    - /vars/vm_config.yml
+    - /vars/capacity_profiles.yml
     
   tasks:
     - name: Step 3.1 - Simulate IP Address Allocation
