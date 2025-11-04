@@ -1,16 +1,21 @@
 # playbooks/02_check_compute.yml
+- name: Compute capacity check
+  hosts: localhost
+  connection: local
+  gather_facts: no
 
-- name: Pre-Check - Ensure vm_profile is defined
-  ansible.builtin.assert:
-    that:
-      - vm_profile is defined
-    fail_msg: "ERROR: vm_profile not defined. Run 00_setup_vars.yml first."
+  tasks:
+    - name: Pre-Check - Ensure vm_profile is defined
+      ansible.builtin.assert:
+        that:
+          - vm_profile is defined
+        fail_msg: "ERROR: vm_profile not defined. Run 00_setup_vars.yml first."
 
-- name: Simulate querying compute cluster capacity
-  ansible.builtin.debug:
-    msg: "Querying compute cluster '{{ vm_config.target_host_group }}' to ensure {{ vm_profile.cpu }} CPU cores and {{ vm_profile.ram_gb }} GB RAM are available."
+    - name: Simulate querying compute cluster capacity
+      ansible.builtin.debug:
+        msg: "Querying compute cluster '{{ vm_config.target_host_group }}' to ensure {{ vm_profile.cpu }} CPU cores and {{ vm_profile.ram_gb }} GB RAM are available."
 
-- name: Simulate Compute API Call and Resource Reservation
-  ansible.builtin.pause:
-    seconds: 4
-    prompt: "Compute check API response received... Resources are RESERVED on host. Press [Enter] to continue."
+    - name: Simulate Compute API Call and Resource Reservation
+      ansible.builtin.pause:
+        seconds: 4
+        prompt: "Compute check API response received... Resources are RESERVED on host. Press [Enter] to continue."

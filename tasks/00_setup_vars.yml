@@ -1,0 +1,10 @@
+# playbooks/00_setup_vars.yml
+
+---
+- name: Set vm_profile based on selection
+  ansible.builtin.set_fact:
+    vm_profile: "{{ capacity_profiles[selected_capacity_profile] }}"
+
+- name: Confirm Profile Loaded
+  ansible.builtin.debug:
+    msg: "Capacity Profile '{{ selected_capacity_profile | upper }}' loaded: CPU={{ vm_profile.cpu_cores }}, RAM={{ vm_profile.memory_gb }} GB, Disk={{ vm_profile.disk_size_gb }} GB."
