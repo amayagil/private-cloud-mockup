@@ -27,12 +27,12 @@
     - name: Normalize vm_size if user selected descriptive label
       ansible.builtin.set_fact:
         vm_size: >-
-          {% set v = vm_size | lower | trim %}
-          {% if 'small' in v %}
+          {% set v = (vm_size | string | lower | trim) %}
+          {% if v is match('^small') %}
           small
-          {% elif 'medium' in v %}
+          {% elif v is match('^medium') %}
           medium
-          {% elif 'large' in v %}
+          {% elif v is match('^large') %}
           large
           {% else %}
           {{ v }}
