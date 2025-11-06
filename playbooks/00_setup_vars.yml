@@ -7,7 +7,7 @@
 
   vars:
     # Used when running manually, otherwise provided by survey
-    vm_size: "{{ vm_size | default(omit) }}"
+    vm_size: "{{ vm_size | default('small') }}"
     vm_sla: "{{ vm_sla | default(omit) }}"
 
   pre_tasks:
