@@ -31,15 +31,15 @@
     - name: Normalize vm_size to internal key
       ansible.builtin.set_fact:
         normalized_vm_size: >-
-          {% set v = (vm_size | string | lower | regex_replace('\\s+', ' ') | trim) %}
-          {% if v.startswith('small') %}
+          {% set v = (vm_size | string | lower) %}
+          {% if '(small' in v or v is match('^small') %}
           small
-          {% elif v.startswith('medium') %}
+          {% elif '(medium' in v or v is match('^medium') %}
           medium
-          {% elif v.startswith('large') %}
+          {% elif '(large' in v or v is match('^large') %}
           large
           {% else %}
-          {{ v }}
+          {{ v | trim }}
           {% endif %}
 
     - name: Apply normalized vm_size
