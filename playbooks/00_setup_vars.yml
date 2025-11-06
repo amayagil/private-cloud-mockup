@@ -28,36 +28,21 @@
       ansible.builtin.debug:
         var: vm_size
 
-    - name: Normalize vm_size to internal key (with debug)
+    # --- Normalización robusta del tamaño de VM ---
+    - name: Normalize vm_size (final version)
       ansible.builtin.set_fact:
-        _debug_vm_raw: "{{ vm_size }}"
-        _debug_vm_lower: "{{ vm_size | string | lower | trim }}"
-        normalized_vm_size: >-
-          {% set v = (vm_size | string | lower | trim) %}
-          {% if v is search('^small') or v is search('small') %}
-          small
-          {% elif v is search('^medium') or v is search('medium') %}
-          medium
-          {% elif v is search('^large') or v is search('large') %}
-          large
-          {% else %}
-          {{ v | regex_replace('[^a-z0-9_]+', '') }}
-          {% endif %}
-
-    - name: Debug normalization details
-      ansible.builtin.debug:
-        msg:
-          - "Raw vm_size: {{ _debug_vm_raw }}"
-          - "Lowercased: {{ _debug_vm_lower }}"
-          - "Normalized: {{ normalized_vm_size }}"
-
-    - name: Apply normalized vm_size
-      ansible.builtin.set_fact:
-        vm_size: "{{ normalized_vm_size | trim }}"
+        vm_size: >-
+          {{ (vm_size | string | lower)
+             | regex_replace('^\\s*', '')
+             | regex_replace('\\s*$', '')
+             | regex_replace('^small.*', 'small')
+             | regex_replace('^medium.*', 'medium')
+             | regex_replace('^large.*', 'large')
+             | trim }}
 
     - name: Debug normalized vm_size
       ansible.builtin.debug:
-        msg: "vm_size normalized to '{{ vm_size }}'"
+        msg: "Normalized vm_size = '{{ vm_size }}'"
 
     - name: Define defaults if files not found
       ansible.builtin.set_fact:
@@ -114,5 +99,5 @@
     - name: Track current task
       ansible.builtin.set_stats:
         data:
-          last_task: "{{ ansible_current_name | default('unknown') }}"
+          last_task: "{{ ansible_current_name | default('Variable settings failure') }}"
 
