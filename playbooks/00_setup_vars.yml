@@ -27,16 +27,20 @@
     - name: Normalize vm_size if user selected descriptive label
       ansible.builtin.set_fact:
         vm_size: >-
-          {% set v = (vm_size | string | lower | trim) %}
-          {% if v is match('^small') %}
+          {% set v = (vm_size | string | lower | regex_replace('\\s+', ' ') | trim) %}
+          {% if 'small' in v %}
           small
-          {% elif v is match('^medium') %}
+          {% elif 'medium' in v %}
           medium
-          {% elif v is match('^large') %}
+          {% elif 'large' in v %}
           large
           {% else %}
           {{ v }}
           {% endif %}
+
+    - name: Debug normalized vm_size
+      ansible.builtin.debug:
+        msg: "Normalized vm_size = {{ vm_size }} (raw input was {{ v if v is defined else 'unknown' }})"
 
     - name: Define defaults if files not found
       ansible.builtin.set_fact:
