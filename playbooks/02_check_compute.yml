@@ -64,4 +64,4 @@
     - name: Track current task
       ansible.builtin.set_stats:
         data:
-        last_task: "{{ ansible_current_name | default('unknown') }}"
+          last_task: "{{ ansible_current_name | default('unknown') }}"
