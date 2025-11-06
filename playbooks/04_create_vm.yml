@@ -34,3 +34,9 @@
     - name: Step 4.3 - Confirm VM Creation
       ansible.builtin.debug:
         msg: "VM '{{ vm_config.vm_name }}' successfully created and configured under host group '{{ vm_config.target_host_group }}'."
+          
+    # Registra el nombre de la última tarea ejecutada antes del fallo.
+    - name: Track current task
+      ansible.builtin.set_stats:
+        data:
+        last_task: "{{ ansible_current_name | default('unknown') }}"

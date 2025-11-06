@@ -56,3 +56,9 @@
           vm_profile: "{{ vm_profile }}"
           vm_name: "{{ vm_name }}"
           storage_check_passed: "{{ storage_check_passed }}"
+          
+    # Registra el nombre de la última tarea ejecutada antes del fallo.
+    - name: Track current task
+      ansible.builtin.set_stats:
+        data:
+        last_task: "{{ ansible_current_name | default('unknown') }}"

@@ -1,0 +1,20 @@
+---
+- name: Failure report
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  tasks:
+    - name: Failure Summary
+      ansible.builtin.debug:
+        msg: |
+          There has been an error in Workflow.
+          Last task executed before error: {{ last_task | default('Not registred') }}
+          Workflow Job ID: {{ awx_job_id | default('N/A') }}
+          Faile Playbook: {{ ansible_parent_name | default('Unknown') }}
+
+    - name: Log failure to file
+      ansible.builtin.lineinfile:
+        path: "/tmp/workflow_failures.log"
+        line: "Workflow failure: ({{ awx_job_id | default('N/A') }}): {{ last_task | default('unknown task') }}"
+        create: yes
