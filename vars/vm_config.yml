@@ -17,3 +17,6 @@ vm_config:
 
   # --- Capacity Profile Selection ---
   selected_capacity_profile: "medium"
+
+  # --- SLA ---
+  vm_sla: "gold"

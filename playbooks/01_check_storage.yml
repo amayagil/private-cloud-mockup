@@ -10,33 +10,43 @@
       ansible.builtin.include_vars:
         file: "{{ playbook_dir }}/../vars/vm_config.yml"
         name: vm_config
+      ignore_errors: yes
 
     - name: Load Capacity Profiles
       ansible.builtin.include_vars:
         file: "{{ playbook_dir }}/../vars/capacity_profiles.yml"
         name: capacity_datal
+      ignore_errors: yes
     
   tasks:
+    - name: Define effective storage capacity (survey > vm_config > profile default)
+      ansible.builtin.set_fact:
+        effective_storage_gb: >-
+          {{ vm_storage_gb
+             | default(vm_config.vm_storage_gb
+             | default(vm_profile.storage_gb
+             | default(50))) }}
+
     - name: Show received workflow variables
       ansible.builtin.debug:
         msg:
           - "Received VM name: {{ vm_name | default('undefined') }}"
-          - "Received capacity profile: {{ vm_profile | default({}) }}"
+          - "Selected profile: {{ selected_profile | default('undefined') }}"
           - "CPU: {{ vm_profile.cpu | default('N/A') }}"
           - "RAM: {{ vm_profile.ram_gb | default('N/A') }} GB"
-          - "Storage: {{ vm_profile.storage_gb | default('N/A') }} GB"
+          - "Storage: {{ effective_storage_gb }} GB (final effective value)"
 
     - name: Validate that vm_profile was passed correctly
       ansible.builtin.assert:
         that:
           - vm_profile is defined
-          - vm_profile.storage_gb is defined
-        fail_msg: "ERROR: vm_profile or storage_gb missing from workflow artifacts."
+          - effective_storage_gb | int > 0
+        fail_msg: "ERROR: vm_profile or effective_storage_gb missing or invalid."
 
     - name: Simulate querying storage cluster
       ansible.builtin.debug:
         msg: >
-          Querying storage cluster to ensure {{ vm_profile.storage_gb }} GB
+          Querying storage cluster to ensure {{ effective_storage_gb }} GB
           is available for VM '{{ vm_name }}'.
 
     - name: Simulate storage API call
@@ -50,9 +60,12 @@
           storage_check_passed: true
           vm_profile: "{{ vm_profile }}"
           vm_name: "{{ vm_name }}"
-          
+          vm_storage_gb: "{{ effective_storage_gb }}"
+          selected_profile: "{{ selected_profile }}"
+          vm_sla: "{{ effective_sla }}"
+
     # Registra el nombre de la última tarea ejecutada antes del fallo.
     - name: Track current task
       ansible.builtin.set_stats:
         data:
-        last_task: "{{ ansible_current_name | default('unknown') }}"
+          last_task: "{{ ansible_current_name | default('unknown') }}"

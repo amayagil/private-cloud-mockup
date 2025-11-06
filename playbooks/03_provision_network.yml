@@ -9,39 +9,62 @@
       ansible.builtin.include_vars:
         file: "{{ playbook_dir }}/../vars/vm_config.yml"
         name: vm_config
+      ignore_errors: yes
 
     - name: Load Capacity Profiles
       ansible.builtin.include_vars:
         file: "{{ playbook_dir }}/../vars/capacity_profiles.yml"
         name: capacity_data
+      ignore_errors: yes
     
   tasks:
+    - name: Define effective security level (survey > vm_config > default)
+      ansible.builtin.set_fact:
+        effective_security_level: >-
+          {{ vm_security
+             | default(vm_config.vm_security
+             | default('CIS_LVL1')) }}
+
+    - name: Validate provided security level
+      ansible.builtin.assert:
+        that:
+          - effective_security_level in ['CIS_LVL1', 'CIS_LVL2']
+        fail_msg: >-
+          ERROR: Invalid security level '{{ effective_security_level }}'.
+          Allowed values are: CIS_LVL1, CIS_LVL2.
+
     - name: Step 3.1 - Simulate IP Address Allocation
       ansible.builtin.debug:
-        msg: "DHCP/IPAM service allocating static IP: {{ vm_config.vm_ip_address }} for VM '{{ vm_config.vm_name }}'."
+        msg: "DHCP/IPAM service allocating static IP: {{ vm_config.vm_ip_address | default('192.168.0.100') }} for VM '{{ vm_name | default(vm_config.vm_name | default('unnamed-vm')) }}'."
 
-    - name: Step 3.2 - Create/Verify and Attach Security Group to virtual interface
+    - name: Step 3.2 - Attach Security Group to virtual interface
       ansible.builtin.debug:
-        msg: "Attaching security groups {{ vm_config.vm_security_groups }} to virtual NIC for VM '{{ vm_config.vm_name }}'."
+        msg: >
+          Attaching security policy '{{ effective_security_level }}'
+          to virtual NIC for VM '{{ vm_name | default(vm_config.vm_name | default('unnamed-vm')) }}'.
 
     - name: Step 3.3 - Simulate Security Group Attachment Confirmation
       ansible.builtin.pause:
         seconds: 3
-        prompt: "Security groups successfully attached. Press [Enter] to continue."
+        prompt: "Security policy successfully attached. Press [Enter] to continue."
 
     - name: Step 3.4 - Simulate DNS Record Creation
       ansible.builtin.debug:
-        msg: "Creating DNS record '{{ vm_config.vm_dns_record }}' for IP {{ vm_config.vm_ip_address }}."
+        msg: >
+          Creating DNS record '{{ vm_config.vm_dns_record | default('vm-auto.local') }}'
+          for IP {{ vm_config.vm_ip_address | default('192.168.0.100') }}.
 
-    # tarea para pasar variables al siguiente paso del WF
-    - name: Save vm_profile for next workflow step
+    - name: Step 3.5 - Save data for next workflow step
       ansible.builtin.set_stats:
         data:
           vm_profile: "{{ vm_profile }}"
-          vm_name: "{{ vm_config.vm_name }}"
-          
-    # Registra el nombre de la última tarea ejecutada antes del fallo.
+          vm_name: "{{ vm_name | default(vm_config.vm_name) }}"
+          vm_ip_address: "{{ vm_config.vm_ip_address | default('192.168.0.100') }}"
+          vm_security: "{{ effective_security_level }}"
+          vm_dns_record: "{{ vm_config.vm_dns_record | default('vm-auto.local') }}"
+          vm_sla: "{{ effective_sla }}"
+
     - name: Track current task
       ansible.builtin.set_stats:
         data:
-        last_task: "{{ ansible_current_name | default('unknown') }}"
+          last_task: "{{ ansible_current_name | default('unknown') }}"

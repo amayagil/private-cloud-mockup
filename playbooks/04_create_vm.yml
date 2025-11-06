@@ -9,11 +9,13 @@
       ansible.builtin.include_vars:
         file: "{{ playbook_dir }}/../vars/vm_config.yml"
         name: vm_config
+      ignore_errors: yes
 
     - name: Load Capacity Profiles
       ansible.builtin.include_vars:
         file: "{{ playbook_dir }}/../vars/capacity_profiles.yml"
         name: capacity_data
+      ignore_errors: yes
 
   tasks:
     - name: Pre-Check - Ensure vm_profile is defined
