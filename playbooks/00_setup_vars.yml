@@ -19,42 +19,23 @@
       ignore_errors: yes
 
   tasks:
-    - name: Capture raw vm_size (survey / CLI / vm_config) explicitly
+    - name: Capture raw vm_size
       ansible.builtin.set_fact:
-        raw_vm_size: >-
-          {{ (vm_size | default(vm_config.selected_capacity_profile | default('small'))) }}
+        raw_vm_size: "{{ vm_size | default(vm_config.selected_capacity_profile | default('small')) }}"
 
-    - name: Debug raw_vm_size
-      ansible.builtin.debug:
-        msg: "raw_vm_size (original input) = {{ raw_vm_size }}"
-
-    - name: Extract first match small|medium|large (as list -> take first)
-      ansible.builtin.set_fact:
-        vm_size_match_list: "{{ raw_vm_size | regex_search('(?i)(small|medium|large)') | default([]) }}"
-
-    - name: Debug vm_size_match_list
-      ansible.builtin.debug:
-        msg: "vm_size_match_list = {{ vm_size_match_list }} (type: {{ vm_size_match_list.__class__.__name__ }})"
-
-    - name: Take first element if list and normalize to string
-      ansible.builtin.set_fact:
-        vm_size_match: >-
-          {{ (vm_size_match_list[0] if vm_size_match_list is iterable and vm_size_match_list|length > 0 else '') | default('') }}
-
-    - name: Debug vm_size_match
-      ansible.builtin.debug:
-        msg: "vm_size_match (first match) = '{{ vm_size_match }}' (type: {{ vm_size_match.__class__.__name__ }})"
-
-    - name: Build final normalized vm_size (fallback to raw lowercased)
+    - name: Normalize vm_size (simple & reliable)
       ansible.builtin.set_fact:
         vm_size_normalized: >-
-          {{ (vm_size_match | default('') | string | lower | trim)
-             if (vm_size_match | default('') | string) != ''
-             else (raw_vm_size | string | lower | trim) }}
+          {{ raw_vm_size | lower
+                         | regex_replace('.*small.*', 'small')
+                         | regex_replace('.*medium.*', 'medium')
+                         | regex_replace('.*large.*', 'large') }}
 
-    - name: Debug vm_size_normalized
+    - name: Debug normalization
       ansible.builtin.debug:
-        msg: "vm_size_normalized = '{{ vm_size_normalized }}' (type: {{ vm_size_normalized.__class__.__name__ }})"
+        msg:
+          - "Input  : {{ raw_vm_size }}"
+          - "Output : {{ vm_size_normalized }}"
 
     - name: Ensure capacity_data default structure
       ansible.builtin.set_fact:
@@ -65,56 +46,32 @@
             'large':  {'cpu': 8, 'ram_gb': 16, 'storage_gb': 30} }
           }) }}"
 
-    - name: Derive selected_profile key (from normalized vm_size)
+    - name: Derive selected_profile
       ansible.builtin.set_fact:
-        selected_profile: "{{ vm_size_normalized | default(vm_config.selected_capacity_profile | default('medium')) }}"
+        selected_profile: "{{ vm_size_normalized }}"
 
-    - name: Debug selected_profile
-      ansible.builtin.debug:
-        msg: "selected_profile = {{ selected_profile }} (type: {{ selected_profile.__class__.__name__ }})"
-
-    - name: Validate selected profile exists
+    - name: Validate selected profile
       ansible.builtin.assert:
         that:
           - selected_profile in capacity_data.capacity_profiles
         fail_msg: "Profile '{{ selected_profile }}' not found in capacity_profiles."
-        success_msg: "Using capacity profile '{{ selected_profile }}'."
 
-    - name: Set vm_profile based on selected profile
+    - name: Set vm_profile and SLA
       ansible.builtin.set_fact:
         vm_profile: "{{ capacity_data.capacity_profiles[selected_profile] }}"
-
-    - name: Compute effective_sla
-      ansible.builtin.set_fact:
         effective_sla: "{{ vm_sla | default(vm_config.vm_sla | default('silver')) }}"
 
-    - name: Assert SLA
-      ansible.builtin.assert:
-        that:
-          - effective_sla in ['bronze','silver','gold']
-        fail_msg: "Invalid SLA '{{ effective_sla }}'. Allowed values: bronze, silver, gold."
-
-    - name: Confirm Profile Loaded
+    - name: Confirm results
       ansible.builtin.debug:
         msg: >
-          Capacity Profile '{{ selected_profile | upper }}' loaded:
-          CPU={{ vm_profile.cpu }} cores,
-          RAM={{ vm_profile.ram_gb }} GB,
-          Disk={{ vm_profile.storage_gb }} GB,
-          VM={{ vm_config.vm_name | default('default-vm') }},
-          SLA={{ effective_sla | upper }}.
+          Using profile {{ selected_profile | upper }}:
+          CPU={{ vm_profile.cpu }} RAM={{ vm_profile.ram_gb }}GB Disk={{ vm_profile.storage_gb }}GB
+          SLA={{ effective_sla | upper }}
 
-    - name: Save vm_profile and metadata for next workflow step
+    - name: Save for next step
       ansible.builtin.set_stats:
         data:
           vm_profile: "{{ vm_profile }}"
           vm_name: "{{ vm_config.vm_name | default('default-vm') }}"
           selected_profile: "{{ selected_profile }}"
           vm_sla: "{{ effective_sla }}"
-          raw_vm_size: "{{ raw_vm_size }}"
-          normalized_vm_size: "{{ vm_size_normalized }}"
-
-    - name: Track current task
-      ansible.builtin.set_stats:
-        data:
-          last_task: "Vars settings finished"
