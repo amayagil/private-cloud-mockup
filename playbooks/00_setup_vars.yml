@@ -28,17 +28,19 @@
       ansible.builtin.debug:
         var: vm_size
 
-    # --- Normalización robusta del tamaño de VM ---
-    - name: Normalize vm_size (final version)
+    - name: Normalize vm_size (robust final)
       ansible.builtin.set_fact:
         vm_size: >-
-          {{ (vm_size | string | lower)
-             | regex_replace('^\\s*', '')
-             | regex_replace('\\s*$', '')
-             | regex_replace('^small.*', 'small')
-             | regex_replace('^medium.*', 'medium')
-             | regex_replace('^large.*', 'large')
-             | trim }}
+          {% set v = (vm_size | string | lower | trim) %}
+          {% if 'small' in v %}
+          small
+          {% elif 'medium' in v %}
+          medium
+          {% elif 'large' in v %}
+          large
+          {% else %}
+          {{ v }}
+          {% endif %}
 
     - name: Debug normalized vm_size
       ansible.builtin.debug:
