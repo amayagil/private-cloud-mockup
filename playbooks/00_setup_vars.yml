@@ -42,6 +42,10 @@
       ansible.builtin.debug:
         msg: "Normalized vm_size = {{ vm_size }} (raw input was {{ v if v is defined else 'unknown' }})"
 
+    - name: Debug raw vm_size
+      ansible.builtin.debug:
+        var: vm_size
+
     - name: Define defaults if files not found
       ansible.builtin.set_fact:
         # asegura que capacity_data tenga estructura base
