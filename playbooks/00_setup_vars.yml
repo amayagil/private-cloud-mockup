@@ -28,19 +28,28 @@
       ansible.builtin.debug:
         var: vm_size
 
-    - name: Normalize vm_size to internal key
+    - name: Normalize vm_size to internal key (with debug)
       ansible.builtin.set_fact:
+        _debug_vm_raw: "{{ vm_size }}"
+        _debug_vm_lower: "{{ vm_size | string | lower | trim }}"
         normalized_vm_size: >-
           {% set v = (vm_size | string | lower | trim) %}
-          {% if v | regex_search('^small') or v | regex_search('small') %}
+          {% if v is search('^small') or v is search('small') %}
           small
-          {% elif v | regex_search('^medium') or v | regex_search('medium') %}
+          {% elif v is search('^medium') or v is search('medium') %}
           medium
-          {% elif v | regex_search('^large') or v | regex_search('large') %}
+          {% elif v is search('^large') or v is search('large') %}
           large
           {% else %}
           {{ v | regex_replace('[^a-z0-9_]+', '') }}
           {% endif %}
+
+    - name: Debug normalization details
+      ansible.builtin.debug:
+        msg:
+          - "Raw vm_size: {{ _debug_vm_raw }}"
+          - "Lowercased: {{ _debug_vm_lower }}"
+          - "Normalized: {{ normalized_vm_size }}"
 
     - name: Apply normalized vm_size
       ansible.builtin.set_fact:
