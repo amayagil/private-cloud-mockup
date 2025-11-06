@@ -24,6 +24,19 @@
       ignore_errors: yes
 
   tasks:
+    - name: Normalize vm_size if user selected descriptive label
+      ansible.builtin.set_fact:
+        vm_size: >-
+          {% if 'small' in vm_size | lower %}
+          small
+          {% elif 'medium' in vm_size | lower %}
+          medium
+          {% elif 'large' in vm_size | lower %}
+          large
+          {% else %}
+          {{ vm_size }}
+          {% endif %}
+
     - name: Define defaults if files not found
       ansible.builtin.set_fact:
         # asegura que capacity_data tenga estructura base
