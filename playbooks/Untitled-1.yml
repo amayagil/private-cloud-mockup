@@ -1,0 +1,39 @@
+---
+- name: Normalize vm_size from survey input
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    # Simulación del valor recibido desde la survey
+    # (en tu caso, vendrá directamente de la encuesta)
+    vm_size: "Medium (2 CPU, 4 GB mem)"
+
+  tasks:
+
+    - name: Step 1 - Mostrar valor original
+      ansible.builtin.debug:
+        msg: "vm_size (raw from survey) = {{ vm_size }}"
+
+    - name: Step 2 - Extraer palabra clave (small|medium|large)
+      ansible.builtin.set_fact:
+        vm_size_clean: "{{ vm_size | regex_search('(?i)(small|medium|large)', '\\1') | lower }}"
+
+    - name: Step 3 - Mostrar valor intermedio
+      ansible.builtin.debug:
+        msg: "vm_size_clean (regex result) = {{ vm_size_clean }}"
+
+    - name: Step 4 - Normalizar si regex no encontró nada
+      ansible.builtin.set_fact:
+        vm_size_normalized: "{{ vm_size_clean if vm_size_clean is defined and vm_size_clean != '' else vm_size | lower }}"
+    
+    - name: Step 5 - Mostrar valor final normalizado
+      ansible.builtin.debug:
+        msg: "vm_size_normalized (final) = {{ vm_size_normalized }}"
+
+    - name: Step 6 - Asignar al perfil seleccionado
+      ansible.builtin.set_fact:
+        selected_profile: "{{ vm_size_normalized }}"
+
+    - name: Step 7 - Mostrar selected_profile final
+      ansible.builtin.debug:
+        msg: "selected_profile = {{ selected_profile }}"

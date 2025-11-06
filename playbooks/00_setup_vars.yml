@@ -26,16 +26,35 @@
 
     - name: Debug raw_vm_size
       ansible.builtin.debug:
-        msg:
-          - "raw_vm_size (original input) = {{ raw_vm_size }}"
+        msg: "raw_vm_size (original input) = {{ raw_vm_size }}"
 
-    - name: Normalize vm_size extracting small|medium|large (final approach)
+    - name: Extract first match small|medium|large (as list -> take first)
       ansible.builtin.set_fact:
-        vm_size_clean: "{{ vm_size | regex_search('(?i)(small|medium|large)', '\\1') | lower }}"
+        vm_size_match_list: "{{ raw_vm_size | regex_search('(?i)(small|medium|large)') | default([]) }}"
 
-    - name: Normalize if regex did not find anything
+    - name: Debug vm_size_match_list
+      ansible.builtin.debug:
+        msg: "vm_size_match_list = {{ vm_size_match_list }} (type: {{ vm_size_match_list.__class__.__name__ }})"
+
+    - name: Take first element if list and normalize to string
       ansible.builtin.set_fact:
-        vm_size_normalized: "{{ vm_size_clean if vm_size_clean is defined and vm_size_clean != '' else vm_size | lower }}"
+        vm_size_match: >-
+          {{ (vm_size_match_list[0] if vm_size_match_list is iterable and vm_size_match_list|length > 0 else '') | default('') }}
+
+    - name: Debug vm_size_match
+      ansible.builtin.debug:
+        msg: "vm_size_match (first match) = '{{ vm_size_match }}' (type: {{ vm_size_match.__class__.__name__ }})"
+
+    - name: Build final normalized vm_size (fallback to raw lowercased)
+      ansible.builtin.set_fact:
+        vm_size_normalized: >-
+          {{ (vm_size_match | default('') | string | lower | trim)
+             if (vm_size_match | default('') | string) != ''
+             else (raw_vm_size | string | lower | trim) }}
+
+    - name: Debug vm_size_normalized
+      ansible.builtin.debug:
+        msg: "vm_size_normalized = '{{ vm_size_normalized }}' (type: {{ vm_size_normalized.__class__.__name__ }})"
 
     - name: Ensure capacity_data default structure
       ansible.builtin.set_fact:
@@ -52,7 +71,7 @@
 
     - name: Debug selected_profile
       ansible.builtin.debug:
-        msg: "selected_profile = {{ selected_profile }}"
+        msg: "selected_profile = {{ selected_profile }} (type: {{ selected_profile.__class__.__name__ }})"
 
     - name: Validate selected profile exists
       ansible.builtin.assert:
@@ -65,7 +84,7 @@
       ansible.builtin.set_fact:
         vm_profile: "{{ capacity_data.capacity_profiles[selected_profile] }}"
 
-    - name: Validate SLA level
+    - name: Compute effective_sla
       ansible.builtin.set_fact:
         effective_sla: "{{ vm_sla | default(vm_config.vm_sla | default('silver')) }}"
 
@@ -93,7 +112,7 @@
           selected_profile: "{{ selected_profile }}"
           vm_sla: "{{ effective_sla }}"
           raw_vm_size: "{{ raw_vm_size }}"
-          normalized_vm_size: "{{ vm_size }}"
+          normalized_vm_size: "{{ vm_size_normalized }}"
 
     - name: Track current task
       ansible.builtin.set_stats:
