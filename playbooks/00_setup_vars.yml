@@ -24,27 +24,31 @@
       ignore_errors: yes
 
   tasks:
-    - name: Normalize vm_size if user selected descriptive label
+    - name: Debug raw vm_size (from survey or default)
+      ansible.builtin.debug:
+        var: vm_size
+
+    - name: Normalize vm_size to internal key
       ansible.builtin.set_fact:
-        vm_size: >-
+        normalized_vm_size: >-
           {% set v = (vm_size | string | lower | regex_replace('\\s+', ' ') | trim) %}
-          {% if 'small' in v %}
+          {% if v.startswith('small') %}
           small
-          {% elif 'medium' in v %}
+          {% elif v.startswith('medium') %}
           medium
-          {% elif 'large' in v %}
+          {% elif v.startswith('large') %}
           large
           {% else %}
           {{ v }}
           {% endif %}
 
+    - name: Apply normalized vm_size
+      ansible.builtin.set_fact:
+        vm_size: "{{ normalized_vm_size }}"
+
     - name: Debug normalized vm_size
       ansible.builtin.debug:
-        msg: "Normalized vm_size = {{ vm_size }} (raw input was {{ v if v is defined else 'unknown' }})"
-
-    - name: Debug raw vm_size
-      ansible.builtin.debug:
-        var: vm_size
+        msg: "vm_size normalized to '{{ vm_size }}'"
 
     - name: Define defaults if files not found
       ansible.builtin.set_fact:
