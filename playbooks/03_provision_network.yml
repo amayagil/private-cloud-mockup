@@ -63,8 +63,5 @@
           vm_security: "{{ effective_security_level }}"
           vm_dns_record: "{{ vm_config.vm_dns_record | default('vm-auto.local') }}"
           vm_sla: "{{ effective_sla }}"
-
-    - name: Track current task
-      ansible.builtin.set_stats:
-        data:
-          last_task: "{{ ansible_current_name | default('unknown') }}"
+          # Registra el nombre de la última tarea ejecutada antes del fallo.
+          last_task: "{{ ansible_current_name | default('Network settings failure') }}"
