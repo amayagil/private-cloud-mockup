@@ -15,9 +15,9 @@
     - name: Load Capacity Profiles
       ansible.builtin.include_vars:
         file: "{{ playbook_dir }}/../vars/capacity_profiles.yml"
-        name: capacity_datal
+        name: capacity_data
       ignore_errors: yes
-    
+
   tasks:
     - name: Define effective storage capacity (survey > vm_config > profile default)
       ansible.builtin.set_fact:
@@ -25,10 +25,10 @@
           {{ (
               vm_storage_gb
               | default(vm_config.vm_storage_gb
-              | default(vm_profile.storage_gb
-              | default(50)))
+                | default(vm_profile.storage_gb
+                  | default(50)))
             ) | regex_replace('[^0-9]', '') | int }}
-    
+
     - name: Show received workflow variables
       ansible.builtin.debug:
         msg:
@@ -36,7 +36,7 @@
           - "Selected profile: {{ selected_profile | default('undefined') }}"
           - "CPU: {{ vm_profile.cpu | default('N/A') }}"
           - "RAM: {{ vm_profile.ram_gb | default('N/A') }} GB"
-          - "Storage: {{ effective_storage_gb }} GB (final effective value)"
+          - "Storage: {{ effective_storage_gb }} GB"
 
     - name: Validate that vm_profile was passed correctly
       ansible.builtin.assert:
@@ -56,6 +56,11 @@
         seconds: 3
         prompt: "Storage check API response received... Space RESERVED. Press [Enter] to continue."
 
+    # --- Ensure effective_sla exists before saving results ---
+    - name: Ensure effective_sla is defined (survey vm_sla > vm_config > default)
+      ansible.builtin.set_fact:
+        effective_sla: "{{ effective_sla | default(vm_sla | default(vm_config.vm_sla | default('silver'))) }}"
+
     - name: Save result for next workflow step
       ansible.builtin.set_stats:
         data:
@@ -66,4 +71,4 @@
           selected_profile: "{{ selected_profile }}"
           vm_sla: "{{ effective_sla }}"
           # Registra el nombre de la última tarea ejecutada antes del fallo.
-          last_task: "{{ ansible_current_name | default('Storage capacity failure') }}"
+          last_task: "{{ ansible_current_name | default('Storage capacity finished') }}"
