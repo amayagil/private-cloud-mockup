@@ -3,6 +3,7 @@
 Simple set of playbooks to mock up a VM creation on a private cloud, simulating storage, compute and network capacities verification and allocation.
 
 ## Directory Structure
+```
 ├── master_provisioning_workflow.yml
 ├── playbooks
 │   ├── 00_setup_vars.yml
@@ -23,7 +24,7 @@ Simple set of playbooks to mock up a VM creation on a private cloud, simulating 
 └── vars
     ├── capacity_profiles.yml
     └── vm_config.yml
-
+```
 ## Execution
 This mockup is aimed to be executed both on the cli as well as on a workflow on AAP.
 
