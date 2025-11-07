@@ -24,16 +24,15 @@
         raw_security_level: >-
           {{ vm_security
              | default(vm_config.vm_security
-             | default('CIS_LVL1')) }}
+             | default('CIS Level 1')) }}
 
-    - name: Normalize security level to canonical form
+    - name: Normalize security level (simple & reliable)
       ansible.builtin.set_fact:
         effective_security_level: >-
-          {{ (raw_security_level | upper)
-             | regex_replace('[^A-Z0-9]', '')     # elimina espacios, guiones, etc.
-             | regex_replace('LEVEL', 'LVL')      # convierte LEVEL → LVL
-             | regex_replace('CISLVL([12])', 'CIS_LVL\\1')  # asegura formato CIS_LVL1
-          }}
+          {{ raw_security_level
+             | lower
+             | regex_replace('.*cis level 1.*', 'CIS_LVL1')
+             | regex_replace('.*cis level 2.*', 'CIS_LVL2') }}
 
     - name: Validate provided security level
       ansible.builtin.assert:
