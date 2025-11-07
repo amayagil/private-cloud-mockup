@@ -1,6 +1,6 @@
 # playbooks/03_provision_network.yml
 ---
-- name: Vars settings
+- name: Network provisioning
   hosts: localhost
   connection: local
   gather_facts: no
@@ -17,21 +17,29 @@
         file: "{{ playbook_dir }}/../vars/capacity_profiles.yml"
         name: capacity_data
       ignore_errors: yes
-    
+
   tasks:
     - name: Define effective security level (survey > vm_config > default)
       ansible.builtin.set_fact:
-        effective_security_level: >-
+        raw_security_level: >-
           {{ vm_security
              | default(vm_config.vm_security
              | default('CIS_LVL1')) }}
+
+    - name: Normalize security level value
+      ansible.builtin.set_fact:
+        effective_security_level: >-
+          {{ raw_security_level
+             | regex_replace(' ', '_')
+             | regex_replace('(?i)level', 'LVL')
+             | upper }}
 
     - name: Validate provided security level
       ansible.builtin.assert:
         that:
           - effective_security_level in ['CIS_LVL1', 'CIS_LVL2']
         fail_msg: >-
-          ERROR: Invalid security level '{{ effective_security_level }}'.
+          ERROR: Invalid security level '{{ raw_security_level }}' (normalized as '{{ effective_security_level }}').
           Allowed values are: CIS_LVL1, CIS_LVL2.
 
     - name: Step 3.1 - Simulate IP Address Allocation
@@ -63,6 +71,5 @@
           vm_ip_address: "{{ vm_config.vm_ip_address | default('192.168.0.100') }}"
           vm_security: "{{ effective_security_level }}"
           vm_dns_record: "{{ vm_config.vm_dns_record | default('vm-auto.local') }}"
-          vm_sla: "{{ effective_sla }}"
-          # Registra el nombre de la última tarea ejecutada antes del fallo.
+          vm_sla: "{{ effective_sla | default(vm_sla | default(vm_config.vm_sla | default('silver'))) }}"
           last_task: "{{ ansible_current_name | default('Network settings failure') }}"
