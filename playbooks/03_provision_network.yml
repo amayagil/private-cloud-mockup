@@ -26,20 +26,22 @@
              | default(vm_config.vm_security
              | default('CIS_LVL1')) }}
 
-    - name: Normalize security level value
+    - name: Normalize security level to canonical form
       ansible.builtin.set_fact:
         effective_security_level: >-
-          {{ raw_security_level
-             | regex_replace(' ', '_')
-             | regex_replace('(?i)level', 'LVL')
-             | upper }}
+          {{ (raw_security_level | upper)
+             | regex_replace('[^A-Z0-9]', '')     # elimina espacios, guiones, etc.
+             | regex_replace('LEVEL', 'LVL')      # convierte LEVEL → LVL
+             | regex_replace('CISLVL([12])', 'CIS_LVL\\1')  # asegura formato CIS_LVL1
+          }}
 
     - name: Validate provided security level
       ansible.builtin.assert:
         that:
           - effective_security_level in ['CIS_LVL1', 'CIS_LVL2']
         fail_msg: >-
-          ERROR: Invalid security level '{{ raw_security_level }}' (normalized as '{{ effective_security_level }}').
+          ERROR: Invalid security level '{{ raw_security_level }}'
+          (normalized as '{{ effective_security_level }}').
           Allowed values are: CIS_LVL1, CIS_LVL2.
 
     - name: Step 3.1 - Simulate IP Address Allocation

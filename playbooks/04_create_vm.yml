@@ -1,44 +1,49 @@
 # playbooks/04_create_vm.yml
-- name: Vars settings
+---
+- name: Create VM in private cloud
   hosts: localhost
   connection: local
   gather_facts: no
 
-  pre_tasks:
-    - name: Load VM Config
-      ansible.builtin.include_vars:
-        file: "{{ playbook_dir }}/../vars/vm_config.yml"
-        name: vm_config
-      ignore_errors: yes
-
-    - name: Load Capacity Profiles
-      ansible.builtin.include_vars:
-        file: "{{ playbook_dir }}/../vars/capacity_profiles.yml"
-        name: capacity_data
-      ignore_errors: yes
-
   tasks:
-    - name: Pre-Check - Ensure vm_profile is defined
+    - name: Validate inherited workflow data
       ansible.builtin.assert:
         that:
+          - vm_name is defined
           - vm_profile is defined
-        fail_msg: "ERROR: vm_profile not defined. Run 00_setup_vars.yml first."
+          - vm_storage_gb is defined
+          - vm_sla is defined
+          - selected_profile is defined
+        fail_msg: "Missing required variables from previous steps..."
 
-    - name: Step 4.1 - Initiate VM Cloning and Configuration
+    - name: Step 4.1 - Initiate VM creation
       ansible.builtin.debug:
-        msg: "Calling Cloud API to create VM '{{ vm_config.vm_name }}' using template '{{ vm_config.os_template }}' with assigned resources: CPU={{ vm_profile.cpu }}, RAM={{ vm_profile.ram_gb }}GB, Disk={{ vm_profile.storage_gb }}GB."
+        msg:
+          - "Initiating private cloud API call to create VM '{{ vm_name }}'..."
+          - "Using profile '{{ selected_profile }}'"
+          - "CPU: {{ vm_profile.cpu }} vCPU"
+          - "RAM: {{ vm_profile.ram_gb }} GB"
+          - "Storage: {{ vm_storage_gb }} GB"
+          - "SLA: {{ vm_sla | upper }}"
 
-    - name: Step 4.2 - Simulate Provisioning Wait
+    - name: Step 4.2 - Simulate provisioning delay
       ansible.builtin.pause:
         seconds: 5
-        prompt: "VM provisioning in progress... Press [Enter] to simulate completion."
+        prompt: "Provisioning VM '{{ vm_name }}'... Press [Enter] to simulate completion."
 
-    - name: Step 4.3 - Confirm VM Creation
+    - name: Step 4.3 - Confirm VM creation
       ansible.builtin.debug:
-        msg: "VM '{{ vm_config.vm_name }}' successfully created and configured under host group '{{ vm_config.target_host_group }}'."
-          
-    # Registra el nombre de la última tarea ejecutada antes del fallo.
-    - name: Track current task
+        msg:
+          - "VM '{{ vm_name }}' has been successfully created."
+          - "Profile: {{ selected_profile }}"
+          - "CPU: {{ vm_profile.cpu }}"
+          - "RAM: {{ vm_profile.ram_gb }} GB"
+          - "Storage: {{ vm_storage_gb }} GB"
+          - "SLA Tier: {{ vm_sla }}"
+          - "Status: READY"
+
+    - name: Record final workflow state
       ansible.builtin.set_stats:
         data:
-          last_task: "{{ ansible_current_name | default('VM creation failure') }}"
+          vm_creation_successful: true
+          last_task: "{{ ansible_current_name | default('VM creation complete') }}"
