@@ -22,10 +22,11 @@
     - name: Define effective storage capacity (survey > vm_config > profile default)
       ansible.builtin.set_fact:
         effective_storage_gb: >-
-          {{ vm_storage_gb
-             | default(vm_config.vm_storage_gb
-             | default(vm_profile.storage_gb
-             | default(50))) }}
+          {{ (vm_storage_gb
+              | default(vm_config.vm_storage_gb
+              | default(vm_profile.storage_gb
+              | default(50)))
+            ) | regex_replace('[^0-9]', '') | int }}
 
     - name: Show received workflow variables
       ansible.builtin.debug:
@@ -34,7 +35,7 @@
           - "Selected profile: {{ selected_profile | default('undefined') }}"
           - "CPU: {{ vm_profile.cpu | default('N/A') }}"
           - "RAM: {{ vm_profile.ram_gb | default('N/A') }} GB"
-          - "Storage: {{ effective_storage_gb }} GB (final effective value)"
+          - "Storage: {{ effective_storage_gb }} GB"
 
     - name: Validate that vm_profile was passed correctly
       ansible.builtin.assert:
