@@ -1,4 +1,3 @@
-# playbooks/04_create_vm.yml
 ---
 - name: Create VM in private cloud
   hosts: localhost
@@ -31,16 +30,22 @@
         seconds: 5
         prompt: "Provisioning VM '{{ vm_name }}'... Press [Enter] to simulate completion."
 
-    - name: Step 4.3 - Confirm VM creation
+    - name: Step 4.3 - Show full VM configuration summary
       ansible.builtin.debug:
         msg:
-          - "VM '{{ vm_name }}' has been successfully created."
+          - "   FINAL VM CONFIGURATION SUMMARY"
+          - "────────────────────────────────────"
+          - "Name: {{ vm_name }}"
           - "Profile: {{ selected_profile }}"
-          - "CPU: {{ vm_profile.cpu }}"
+          - "CPU: {{ vm_profile.cpu }} vCPU"
           - "RAM: {{ vm_profile.ram_gb }} GB"
           - "Storage: {{ vm_storage_gb }} GB"
-          - "SLA Tier: {{ vm_sla }}"
-          - "Status: READY"
+          - "SLA Tier: {{ vm_sla | upper }}"
+          - "Network IP: {{ vm_ip_address | default('N/A') }}"
+          - "DNS Record: {{ vm_dns_record | default('N/A') }}"
+          - "Security Policy: {{ vm_security | default('N/A') }}"
+          - "────────────────────────────────────"
+          - "Provisioning Status: SUCCESS!"
 
     - name: Record final workflow state
       ansible.builtin.set_stats:
