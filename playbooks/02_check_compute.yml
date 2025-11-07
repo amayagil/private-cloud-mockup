@@ -1,6 +1,6 @@
-# playbooks/01_check_storage.yml
+# playbooks/02_check_compute.yml
 ---
-- name: Storage capacity check
+- name: Compute capacity check
   hosts: localhost
   connection: local
   gather_facts: no
@@ -19,52 +19,67 @@
       ignore_errors: yes
 
   tasks:
-    - name: Define effective storage capacity (survey > vm_config > profile default)
-      ansible.builtin.set_fact:
-        effective_storage_gb: >-
-          {{ vm_storage_gb
-             | default(vm_config.vm_storage_gb
-             | default(vm_profile.storage_gb
-             | default(50))) }}
-
-    - name: Show received workflow variables
-      ansible.builtin.debug:
-        msg:
-          - "Received VM name: {{ vm_name | default('undefined') }}"
-          - "Selected profile: {{ selected_profile | default('undefined') }}"
-          - "CPU: {{ vm_profile.cpu | default('N/A') }}"
-          - "RAM: {{ vm_profile.ram_gb | default('N/A') }} GB"
-          - "Storage: {{ effective_storage_gb }} GB (final effective value)"
-
-    - name: Validate that vm_profile was passed correctly
-      ansible.builtin.assert:
-        that:
-          - vm_profile is defined
-          - effective_storage_gb | int > 0
-        fail_msg: "ERROR: vm_profile or effective_storage_gb missing or invalid."
-
-    - name: Simulate querying storage cluster
-      ansible.builtin.debug:
-        msg: >
-          Querying storage cluster to ensure {{ effective_storage_gb }} GB
-          is available for VM '{{ vm_name }}'.
-
-    - name: Simulate storage API call
-      ansible.builtin.pause:
-        seconds: 3
-        prompt: "Storage check API response received... Space RESERVED. Press [Enter] to continue."
-
-    - name: Ensure effective_sla is defined
+    # --- Normalización de variables clave ---
+    - name: Ensure effective_sla is defined (survey > vm_config > default)
       ansible.builtin.set_fact:
         effective_sla: "{{ effective_sla | default(vm_sla | default(vm_config.vm_sla | default('silver'))) }}"
 
-    - name: Save result for next workflow step
+    - name: Ensure selected_profile is defined (survey > vm_config > default)
+      ansible.builtin.set_fact:
+        selected_profile: "{{ selected_profile | default(vm_config.selected_profile | default('small')) }}"
+
+    - name: Ensure vm_profile is defined (from capacity_profiles or fallback)
+      ansible.builtin.set_fact:
+        vm_profile: "{{ capacity_data.capacity_profiles[selected_profile] | default({'cpu': 1, 'ram_gb': 1, 'storage_gb': 10}) }}"
+      when: capacity_data is defined and 'capacity_profiles' in capacity_data
+
+    - name: Ensure vm_name is defined
+      ansible.builtin.set_fact:
+        vm_name: "{{ vm_name | default(vm_config.vm_name | default('undefined_vm')) }}"
+
+    # --- Validaciones y simulación ---
+    - name: Show received workflow variables
+      ansible.builtin.debug:
+        msg:
+          - "Received VM name: {{ vm_name }}"
+          - "Storage check passed: {{ storage_check_passed | default(false) }}"
+          - "Selected profile: {{ selected_profile }}"
+          - "CPU cores: {{ vm_profile.cpu | default('N/A') }}"
+          - "RAM: {{ vm_profile.ram_gb | default('N/A') }} GB"
+          - "SLA: {{ effective_sla }}"
+
+    - name: Validate that previous step succeeded
+      ansible.builtin.assert:
+        that:
+          - storage_check_passed | default(false)
+        fail_msg: "Previous workflow stage (storage) did not complete successfully."
+
+    - name: Validate compute data presence
+      ansible.builtin.assert:
+        that:
+          - vm_profile.cpu is defined
+          - vm_profile.ram_gb is defined
+        fail_msg: "vm_profile is incomplete or missing compute data."
+
+    - name: Simulate compute resource query
+      ansible.builtin.debug:
+        msg: >
+          Checking compute cluster for {{ vm_profile.cpu }} CPU cores
+          and {{ vm_profile.ram_gb }} GB RAM availability for VM '{{ vm_name }}'.
+
+    - name: Simulate compute reservation
+      ansible.builtin.pause:
+        seconds: 3
+        prompt: "Compute resources allocated successfully. Press [Enter] to continue."
+
+    # --- Registro de resultados para el siguiente paso ---
+    - name: Save results for next workflow step
       ansible.builtin.set_stats:
         data:
-          storage_check_passed: true
+          compute_check_passed: true
           vm_profile: "{{ vm_profile }}"
           vm_name: "{{ vm_name }}"
-          vm_storage_gb: "{{ effective_storage_gb }}"
+          storage_check_passed: "{{ storage_check_passed | default(true) }}"
           selected_profile: "{{ selected_profile }}"
           vm_sla: "{{ effective_sla }}"
-          last_task: "{{ ansible_current_name | default('Storage capacity check complete') }}"
+          last_task: "{{ ansible_current_name | default('Compute capacity check complete') }}"
